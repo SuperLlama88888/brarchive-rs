@@ -38,4 +38,11 @@ pub enum CliSubcommand {
         #[arg(long)]
         delete_source: bool,
     },
+    #[command(about = "List entry names in a .brarchive file")]
+    List {
+        path: PathBuf,
+        /// Given a directory, list entries in all .brarchive files under __brarchive/
+        #[arg(short, long)]
+        recursive: bool,
+    },
 }

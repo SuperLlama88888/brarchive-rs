@@ -27,6 +27,15 @@ pub fn serialize_with_options(entries: JsValue, dedup: bool) -> Result<Uint8Arra
     Ok(Uint8Array::from(bytes.as_slice()))
 }
 
+/// List entry names in a .brarchive file without reading content. Returns a `string[]`.
+#[wasm_bindgen]
+pub fn list(data: &[u8]) -> Result<JsValue, JsError> {
+    let names = brarchive::list(data)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+    serde_wasm_bindgen::to_value(&names)
+        .map_err(|e| JsError::new(&e.to_string()))
+}
+
 /// Deserialize .brarchive bytes into a plain JS object `{ [key: string]: string }`.
 #[wasm_bindgen]
 pub fn deserialize(data: &[u8]) -> Result<JsValue, JsError> {

@@ -34,6 +34,18 @@ fn main() {
                 info!("Successfully encoded archive in {}!", humantime::format_duration(start_time.elapsed()));
             }
         }
+        CliSubcommand::List { path, recursive } => {
+            if recursive {
+                let archive_root = path.join("__brarchive");
+                if !archive_root.exists() {
+                    error!("No __brarchive/ directory found in \"{}\"", path.display());
+                    exit(1);
+                }
+                list_recursive(&archive_root, &archive_root);
+            } else {
+                list_single(&path);
+            }
+        }
         CliSubcommand::Decode { path, out, recursive, delete_source } => {
             let start_time = Instant::now();
 
@@ -261,6 +273,38 @@ fn decode_recursive(archive_root: &Path, current: &Path, out_root: &Path, delete
                 continue;
             }
             decode_single(&p, &out_dir, delete_source);
+        }
+    }
+}
+
+fn list_single(path: &Path) {
+    let data = fs::read(path).unwrap_or_else(|err| {
+        error!("Failed to read \"{}\": {}", path.display(), err);
+        exit(1);
+    });
+    let names = brarchive::list(&data).unwrap_or_else(|err| {
+        error!("Failed to list \"{}\": {}", path.display(), err);
+        exit(1);
+    });
+    for name in names {
+        println!("{}", name);
+    }
+}
+
+fn list_recursive(archive_root: &Path, current: &Path) {
+    let read_dir = fs::read_dir(current).unwrap_or_else(|err| {
+        error!("Failed to read \"{}\": {}", current.display(), err);
+        exit(1);
+    });
+    for entry in read_dir {
+        let entry = entry.unwrap_or_else(|err| { error!("{}", err); exit(1); });
+        let p = entry.path();
+        if p.is_dir() {
+            list_recursive(archive_root, &p);
+        } else if p.is_file() && p.extension().and_then(OsStr::to_str) == Some("brarchive") {
+            let relative = p.strip_prefix(archive_root).unwrap_or(&p);
+            println!("{}:", relative.display());
+            list_single(&p);
         }
     }
 }

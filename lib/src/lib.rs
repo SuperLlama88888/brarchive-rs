@@ -97,6 +97,15 @@ where
     Ok(buf)
 }
 
+/// List entry names in a .brarchive file without reading content.
+pub fn list(data: &[u8]) -> Result<Vec<String>, BrArchiveError> {
+    let mut buf = Cursor::new(data);
+    let header = v1::read_header(&mut buf)?;
+    (0..header.entries)
+        .map(|_| v1::read_entry_descriptor(&mut buf).map(|e| e.name.to_string()))
+        .collect()
+}
+
 /// Deserialize a .brarchive file into any collection constructible from (String, String) pairs.
 ///
 /// Use a type annotation to select the output type:
