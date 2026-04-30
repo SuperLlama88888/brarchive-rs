@@ -134,7 +134,7 @@ fn main() {
                 exit(1);
             });
 
-            let archive = brarchive::deserialize(&data).unwrap_or_else(|err| {
+            let archive: BTreeMap<String, String> = brarchive::deserialize(&data).unwrap_or_else(|err| {
                 error!("Failed to decode archive file \"{}\": {}", path.display(), err);
                 exit(1);
             });

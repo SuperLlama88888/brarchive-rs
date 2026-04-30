@@ -2,29 +2,70 @@ use crate::error::BrArchiveError;
 use crate::versions::v1;
 use crate::versions::{ENTRY_NAME_LEN_MAX, MAGIC, VERSIONS};
 use byteorder::{LittleEndian, WriteBytesExt};
-use std::collections::BTreeMap;
 use std::io::{Cursor, Write};
 
 pub mod error;
 pub(crate) mod versions;
 
-pub fn serialize(
-    data: impl IntoIterator<Item = (String, String)>,
-) -> Result<Vec<u8>, BrArchiveError> {
-    let data = data.into_iter().collect::<Vec<_>>();
+/// Options controlling serialization behavior.
+#[derive(Debug, Clone, Default)]
+pub struct SerializeOptions {
+    /// Deduplicate entries with identical content by reusing their content_offset/len.
+    pub dedup: bool,
+}
+
+/// Serialize any iterable of string-like key/value pairs into .brarchive bytes.
+pub fn serialize<I, K, V>(data: I) -> Result<Vec<u8>, BrArchiveError>
+where
+    I: IntoIterator<Item = (K, V)>,
+    K: AsRef<str>,
+    V: AsRef<str>,
+{
+    serialize_with(data, SerializeOptions::default())
+}
+
+/// Serialize with explicit options.
+pub fn serialize_with<I, K, V>(data: I, options: SerializeOptions) -> Result<Vec<u8>, BrArchiveError>
+where
+    I: IntoIterator<Item = (K, V)>,
+    K: AsRef<str>,
+    V: AsRef<str>,
+{
+    let data: Vec<(K, V)> = data.into_iter().collect();
     let mut buf = Vec::new();
+
+    // Header
     buf.write_u64::<LittleEndian>(MAGIC)?;
     buf.write_u32::<LittleEndian>(data.len() as u32)?;
     buf.write_u32::<LittleEndian>(*VERSIONS.last().unwrap())?;
+
+    // Compute offsets — track content by bytes for dedup
+    let mut content_index: std::collections::HashMap<Vec<u8>, u32> =
+        std::collections::HashMap::new();
     let mut current_offset: u32 = 0;
-    let mut entries: Vec<(u32, u32)> = Vec::with_capacity(data.len());
+    // (content_offset, content_len, bytes_to_write_or_none)
+    let mut entries: Vec<(u32, u32, Option<Vec<u8>>)> = Vec::with_capacity(data.len());
+
     for (_, content) in &data {
-        let len = content.len() as u32;
-        entries.push((current_offset, len));
-        current_offset += len;
+        let bytes = content.as_ref().as_bytes().to_vec();
+        let len = bytes.len() as u32;
+        if options.dedup {
+            if let Some(&existing_offset) = content_index.get(&bytes) {
+                entries.push((existing_offset, len, None));
+            } else {
+                content_index.insert(bytes.clone(), current_offset);
+                entries.push((current_offset, len, Some(bytes)));
+                current_offset += len;
+            }
+        } else {
+            entries.push((current_offset, len, Some(bytes)));
+            current_offset += len;
+        }
     }
-    for ((name, _), (offset, len)) in data.iter().zip(entries.iter()) {
-        let name_bytes = name.as_bytes();
+
+    // Write descriptors
+    for ((name, _), (offset, len, _)) in data.iter().zip(entries.iter()) {
+        let name_bytes = name.as_ref().as_bytes();
         if name_bytes.len() > ENTRY_NAME_LEN_MAX {
             return Err(BrArchiveError::EntryNameTooLong(name_bytes.len()));
         }
@@ -35,23 +76,42 @@ pub fn serialize(
         buf.write_u32::<LittleEndian>(*offset)?;
         buf.write_u32::<LittleEndian>(*len)?;
     }
-    for (_, content) in &data {
-        buf.write_all(content.as_bytes())?;
+
+    // Write content
+    for (_, _, maybe_bytes) in entries {
+        if let Some(bytes) = maybe_bytes {
+            buf.extend_from_slice(&bytes);
+        }
     }
+
     Ok(buf)
 }
 
-pub fn deserialize(data: &[u8]) -> Result<BTreeMap<String, String>, BrArchiveError> {
+/// Deserialize a .brarchive file into any collection constructible from (String, String) pairs.
+///
+/// Use a type annotation to select the output type:
+/// ```rust
+/// # fn main() -> Result<(), brarchive::error::BrArchiveError> {
+/// # let bytes = brarchive::serialize([("k", "v")])?;
+/// let map: std::collections::BTreeMap<_, _> = brarchive::deserialize(&bytes)?;
+/// # Ok(())
+/// # }
+/// ```
+pub fn deserialize<C>(data: &[u8]) -> Result<C, BrArchiveError>
+where
+    C: FromIterator<(String, String)>,
+{
     let mut buf = Cursor::new(data);
     let header = v1::read_header(&mut buf)?;
-    let mut entry_descriptors = Vec::with_capacity(header.entries as usize);
+    let mut descriptors = Vec::with_capacity(header.entries as usize);
     for _ in 0..header.entries {
-        entry_descriptors.push(v1::read_entry_descriptor(&mut buf)?);
+        descriptors.push(v1::read_entry_descriptor(&mut buf)?);
     }
-    let mut map = BTreeMap::new();
-    for entry in entry_descriptors {
-        let contents = v1::read_entry_contents(&mut buf, &entry)?;
-        map.insert(entry.name.to_string(), contents);
-    }
-    Ok(map)
+    descriptors
+        .into_iter()
+        .map(|entry| {
+            let contents = v1::read_entry_contents(&mut buf, &entry)?;
+            Ok((entry.name.to_string(), contents))
+        })
+        .collect()
 }
