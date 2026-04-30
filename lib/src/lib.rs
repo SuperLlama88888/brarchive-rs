@@ -19,7 +19,7 @@ pub fn serialize(
     let mut current_offset: u32 = 0;
     let mut entries: Vec<(u32, u32)> = Vec::with_capacity(data.len());
     for (_, content) in &data {
-        let len = content.as_bytes().len() as u32;
+        let len = content.len() as u32;
         entries.push((current_offset, len));
         current_offset += len;
     }

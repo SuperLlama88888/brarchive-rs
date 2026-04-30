@@ -3,7 +3,7 @@ use crate::versions::{EntryDescriptor, Header, ENTRY_NAME_LEN_MAX, MAGIC, VERSIO
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Cursor, Read, Seek};
 
-pub fn read_header(buf: &mut Cursor<&[u8]>) -> Result<Header, BrArchiveError> {
+pub(crate) fn read_header(buf: &mut Cursor<&[u8]>) -> Result<Header, BrArchiveError> {
     let magic = buf.read_u64::<LittleEndian>()?;
     if magic != MAGIC {
         return Err(BrArchiveError::MagicMismatch(magic));
@@ -16,7 +16,7 @@ pub fn read_header(buf: &mut Cursor<&[u8]>) -> Result<Header, BrArchiveError> {
     Ok(Header { entries, version })
 }
 
-pub fn read_entry_descriptor<'a>(
+pub(crate) fn read_entry_descriptor<'a>(
     buf: &mut Cursor<&'a [u8]>,
 ) -> Result<EntryDescriptor<'a>, BrArchiveError> {
     let name_len = buf.read_u8()?;
@@ -33,7 +33,7 @@ pub fn read_entry_descriptor<'a>(
     Ok(EntryDescriptor { name, contents_offset, contents_len })
 }
 
-pub fn read_entry_contents(
+pub(crate) fn read_entry_contents(
     buf: &mut Cursor<&[u8]>,
     entry: &EntryDescriptor,
 ) -> Result<String, BrArchiveError> {

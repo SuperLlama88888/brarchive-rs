@@ -1,5 +1,5 @@
 use std::str::Utf8Error;
-use crate::{MAGIC, ENTRY_NAME_LEN_MAX};
+use crate::versions::{MAGIC, ENTRY_NAME_LEN_MAX};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
