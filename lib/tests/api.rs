@@ -16,6 +16,8 @@ fn deserialize_into_vec() {
     ]).unwrap();
     let vec: Vec<(String, String)> = brarchive::deserialize(&bytes).unwrap();
     assert_eq!(vec.len(), 2);
+    assert_eq!(vec[0], ("a.json".to_string(), "1".to_string()));
+    assert_eq!(vec[1], ("b.json".to_string(), "2".to_string()));
 }
 
 #[test]

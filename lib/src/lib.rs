@@ -35,31 +35,41 @@ where
     let mut buf = Vec::new();
 
     // Header
+    let entry_count =
+        u32::try_from(data.len()).map_err(|_| BrArchiveError::TooManyEntries(data.len()))?;
     buf.write_u64::<LittleEndian>(MAGIC)?;
-    buf.write_u32::<LittleEndian>(data.len() as u32)?;
+    buf.write_u32::<LittleEndian>(entry_count)?;
     buf.write_u32::<LittleEndian>(*VERSIONS.last().unwrap())?;
 
-    // Compute offsets — track content by bytes for dedup
-    let mut content_index: std::collections::HashMap<Vec<u8>, u32> =
-        std::collections::HashMap::new();
+    // Compute offsets
     let mut current_offset: u32 = 0;
     // (content_offset, content_len, bytes_to_write_or_none)
     let mut entries: Vec<(u32, u32, Option<Vec<u8>>)> = Vec::with_capacity(data.len());
 
-    for (_, content) in &data {
-        let bytes = content.as_ref().as_bytes().to_vec();
-        let len = bytes.len() as u32;
-        if options.dedup {
+    if options.dedup {
+        let mut content_index: std::collections::HashMap<Vec<u8>, u32> =
+            std::collections::HashMap::new();
+        for (_, content) in &data {
+            let bytes = content.as_ref().as_bytes().to_vec();
+            let len = bytes.len() as u32;
             if let Some(&existing_offset) = content_index.get(&bytes) {
                 entries.push((existing_offset, len, None));
             } else {
                 content_index.insert(bytes.clone(), current_offset);
                 entries.push((current_offset, len, Some(bytes)));
-                current_offset += len;
+                current_offset = current_offset
+                    .checked_add(len)
+                    .ok_or(BrArchiveError::ContentTooLarge)?;
             }
-        } else {
+        }
+    } else {
+        for (_, content) in &data {
+            let bytes = content.as_ref().as_bytes().to_vec();
+            let len = bytes.len() as u32;
             entries.push((current_offset, len, Some(bytes)));
-            current_offset += len;
+            current_offset = current_offset
+                .checked_add(len)
+                .ok_or(BrArchiveError::ContentTooLarge)?;
         }
     }
 

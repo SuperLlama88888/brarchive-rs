@@ -10,6 +10,10 @@ pub enum BrArchiveError {
     UnsupportedVersion(u32),
     #[error("Entry Name too long! Got {0} bytes, maximum {ENTRY_NAME_LEN_MAX}")]
     EntryNameTooLong(usize),
+    #[error("Too many entries: {0} exceeds the u32 maximum")]
+    TooManyEntries(usize),
+    #[error("Content block exceeds 4 GiB limit")]
+    ContentTooLarge,
     #[error(transparent)]
     Utf8Error(#[from] Utf8Error),
     #[error(transparent)]
@@ -23,6 +27,8 @@ impl PartialEq for BrArchiveError {
             (Self::UnsupportedVersion(a), Self::UnsupportedVersion(b)) => a == b,
             (Self::Utf8Error(a), Self::Utf8Error(b)) => a == b,
             (Self::EntryNameTooLong(a), Self::EntryNameTooLong(b)) => a == b,
+            (Self::TooManyEntries(a), Self::TooManyEntries(b)) => a == b,
+            (Self::ContentTooLarge, Self::ContentTooLarge) => true,
             (Self::IOError(_), Self::IOError(_)) => false,
             _ => false,
         }
