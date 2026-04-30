@@ -24,13 +24,15 @@ pub(crate) fn read_entry_descriptor<'a>(
         return Err(BrArchiveError::EntryNameTooLong(name_len as usize));
     }
     let current_pos = buf.position() as usize;
-    let name = std::str::from_utf8(
-        &buf.get_ref()[current_pos..current_pos + name_len as usize],
-    )?;
+    let name = std::str::from_utf8(&buf.get_ref()[current_pos..current_pos + name_len as usize])?;
     buf.set_position((current_pos + ENTRY_NAME_LEN_MAX) as u64);
     let contents_offset = buf.read_u32::<LittleEndian>()?;
     let contents_len = buf.read_u32::<LittleEndian>()?;
-    Ok(EntryDescriptor { name, contents_offset, contents_len })
+    Ok(EntryDescriptor {
+        name,
+        contents_offset,
+        contents_len,
+    })
 }
 
 pub(crate) fn read_entry_contents(

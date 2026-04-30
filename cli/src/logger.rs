@@ -16,7 +16,8 @@ pub fn setup_logger(log_path: Option<PathBuf>) {
         .error(Color::Red);
 
     // Set dispatch formatting
-    let dispatch = dispatch.format(move |out, message, record| {
+    let dispatch = dispatch
+        .format(move |out, message, record| {
             out.finish(format_args!(
                 "[{} {}] {}",
                 Local::now().format("%Y-%m-%d %H:%M:%S%.3f"),

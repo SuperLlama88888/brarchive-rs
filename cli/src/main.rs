@@ -1,14 +1,14 @@
+use crate::args::{CliArgs, CliSubcommand};
+use crate::logger::setup_logger;
 use brarchive::SerializeOptions;
+use clap::Parser;
+use log::{error, info, warn};
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::exit;
 use std::time::Instant;
-use clap::Parser;
-use log::{error, info, warn};
-use crate::args::{CliArgs, CliSubcommand};
-use crate::logger::setup_logger;
 
 mod args;
 mod logger;
@@ -18,20 +18,33 @@ fn main() {
     setup_logger(args.log_path);
 
     match args.command {
-        CliSubcommand::Encode { path, out, recursive, dedup, delete_source } => {
+        CliSubcommand::Encode {
+            path,
+            out,
+            recursive,
+            dedup,
+            delete_source,
+        } => {
             let start_time = Instant::now();
 
             if recursive {
                 let out_base = out.unwrap_or_else(|| path.clone());
                 let archive_root = out_base.join("__brarchive");
                 encode_recursive(&path, &path, &archive_root, dedup, delete_source);
-                info!("Successfully encoded recursively in {}!", humantime::format_duration(start_time.elapsed()));
+                info!(
+                    "Successfully encoded recursively in {}!",
+                    humantime::format_duration(start_time.elapsed())
+                );
             } else {
-                let out = out.unwrap_or_else(|| extract_file_name(&path)
-                    .unwrap_or(PathBuf::from("brarchive")));
+                let out = out.unwrap_or_else(|| {
+                    extract_file_name(&path).unwrap_or(PathBuf::from("brarchive"))
+                });
                 let out = add_extension_if_missing(out, "brarchive");
                 encode_single(&path, &out, dedup, delete_source);
-                info!("Successfully encoded archive in {}!", humantime::format_duration(start_time.elapsed()));
+                info!(
+                    "Successfully encoded archive in {}!",
+                    humantime::format_duration(start_time.elapsed())
+                );
             }
         }
         CliSubcommand::List { path, recursive } => {
@@ -46,7 +59,12 @@ fn main() {
                 list_single(&path);
             }
         }
-        CliSubcommand::Decode { path, out, recursive, delete_source } => {
+        CliSubcommand::Decode {
+            path,
+            out,
+            recursive,
+            delete_source,
+        } => {
             let start_time = Instant::now();
 
             if recursive {
@@ -57,12 +75,19 @@ fn main() {
                 }
                 let out_base = out.unwrap_or_else(|| path.clone());
                 decode_recursive(&archive_root, &archive_root, &out_base, delete_source);
-                info!("Successfully decoded recursively in {}!", humantime::format_duration(start_time.elapsed()));
+                info!(
+                    "Successfully decoded recursively in {}!",
+                    humantime::format_duration(start_time.elapsed())
+                );
             } else {
-                let out = out.unwrap_or_else(|| extract_file_name(&path)
-                    .unwrap_or(PathBuf::from("brarchive")));
+                let out = out.unwrap_or_else(|| {
+                    extract_file_name(&path).unwrap_or(PathBuf::from("brarchive"))
+                });
                 decode_single(&path, &out, delete_source);
-                info!("Successfully decoded archive in {}!", humantime::format_duration(start_time.elapsed()));
+                info!(
+                    "Successfully decoded archive in {}!",
+                    humantime::format_duration(start_time.elapsed())
+                );
             }
         }
     }
@@ -85,14 +110,24 @@ fn encode_single(path: &Path, out: &Path, dedup: bool, delete_source: bool) {
         });
         let mut map = BTreeMap::new();
         for entry in read_dir {
-            let entry = entry.unwrap_or_else(|err| { error!("{}", err); exit(1); });
-            if !entry.path().is_file() { continue; }
+            let entry = entry.unwrap_or_else(|err| {
+                error!("{}", err);
+                exit(1);
+            });
+            if !entry.path().is_file() {
+                continue;
+            }
             let content = fs::read_to_string(entry.path()).unwrap_or_else(|err| {
                 error!("Failed to read \"{}\": {}", entry.path().display(), err);
                 exit(1);
             });
-            let name = entry.path().strip_prefix(path).unwrap()
-                .to_str().unwrap().to_string();
+            let name = entry
+                .path()
+                .strip_prefix(path)
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .to_string();
             map.insert(name, content);
         }
         map
@@ -101,12 +136,19 @@ fn encode_single(path: &Path, out: &Path, dedup: bool, delete_source: bool) {
             error!("Failed to read \"{}\": {}", path.display(), err);
             exit(1);
         });
-        let name = path.file_name().and_then(OsStr::to_str).unwrap().to_string();
+        let name = path
+            .file_name()
+            .and_then(OsStr::to_str)
+            .unwrap()
+            .to_string();
         BTreeMap::from([(name, content)])
     };
 
     let archive = brarchive::serialize_with(entries_map, SerializeOptions { dedup })
-        .unwrap_or_else(|err| { error!("Failed to encode: {}", err); exit(1); });
+        .unwrap_or_else(|err| {
+            error!("Failed to encode: {}", err);
+            exit(1);
+        });
 
     fs::write(out, &archive).unwrap_or_else(|err| {
         error!("Failed to write \"{}\": {}", out.display(), err);
@@ -126,7 +168,13 @@ fn encode_single(path: &Path, out: &Path, dedup: bool, delete_source: bool) {
     }
 }
 
-fn encode_recursive(source_root: &Path, current: &Path, archive_root: &Path, dedup: bool, delete_source: bool) {
+fn encode_recursive(
+    source_root: &Path,
+    current: &Path,
+    archive_root: &Path,
+    dedup: bool,
+    delete_source: bool,
+) {
     let read_dir = fs::read_dir(current).unwrap_or_else(|err| {
         error!("Failed to read \"{}\": {}", current.display(), err);
         exit(1);
@@ -136,7 +184,10 @@ fn encode_recursive(source_root: &Path, current: &Path, archive_root: &Path, ded
     let mut files: BTreeMap<String, String> = BTreeMap::new();
 
     for entry in read_dir {
-        let entry = entry.unwrap_or_else(|err| { error!("{}", err); exit(1); });
+        let entry = entry.unwrap_or_else(|err| {
+            error!("{}", err);
+            exit(1);
+        });
         let p = entry.path();
         if p.is_dir() {
             if p.file_name().and_then(OsStr::to_str) != Some("__brarchive") {
@@ -175,8 +226,11 @@ fn encode_recursive(source_root: &Path, current: &Path, archive_root: &Path, ded
             });
         }
 
-        let archive = brarchive::serialize_with(&files, SerializeOptions { dedup })
-            .unwrap_or_else(|err| { error!("Failed to encode: {}", err); exit(1); });
+        let archive =
+            brarchive::serialize_with(&files, SerializeOptions { dedup }).unwrap_or_else(|err| {
+                error!("Failed to encode: {}", err);
+                exit(1);
+            });
 
         fs::write(&archive_path, &archive).unwrap_or_else(|err| {
             error!("Failed to write \"{}\": {}", archive_path.display(), err);
@@ -217,7 +271,10 @@ fn decode_single(path: &Path, out: &Path, delete_source: bool) {
     });
 
     if out.exists() && out.is_dir() {
-        if fs::read_dir(out).map(|mut d| d.next().is_some()).unwrap_or(false) {
+        if fs::read_dir(out)
+            .map(|mut d| d.next().is_some())
+            .unwrap_or(false)
+        {
             error!("Output directory \"{}\" is not empty", out.display());
             exit(1);
         }
@@ -256,7 +313,10 @@ fn decode_recursive(archive_root: &Path, current: &Path, out_root: &Path, delete
     });
 
     for entry in read_dir {
-        let entry = entry.unwrap_or_else(|err| { error!("{}", err); exit(1); });
+        let entry = entry.unwrap_or_else(|err| {
+            error!("{}", err);
+            exit(1);
+        });
         let p = entry.path();
 
         if p.is_dir() {
@@ -297,7 +357,10 @@ fn list_recursive(archive_root: &Path, current: &Path) {
         exit(1);
     });
     for entry in read_dir {
-        let entry = entry.unwrap_or_else(|err| { error!("{}", err); exit(1); });
+        let entry = entry.unwrap_or_else(|err| {
+            error!("{}", err);
+            exit(1);
+        });
         let p = entry.path();
         if p.is_dir() {
             list_recursive(archive_root, &p);

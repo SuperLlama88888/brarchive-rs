@@ -13,7 +13,10 @@ pub struct CliArgs {
 
 #[derive(Subcommand, Debug, Clone)]
 pub enum CliSubcommand {
-    #[command(alias = "compress", about = "Encode a folder or file into .brarchive format")]
+    #[command(
+        alias = "compress",
+        about = "Encode a folder or file into .brarchive format"
+    )]
     Encode {
         path: PathBuf,
         out: Option<PathBuf>,
@@ -27,7 +30,10 @@ pub enum CliSubcommand {
         #[arg(long)]
         delete_source: bool,
     },
-    #[command(alias = "decompress", about = "Decode a .brarchive file or directory of archives")]
+    #[command(
+        alias = "decompress",
+        about = "Decode a .brarchive file or directory of archives"
+    )]
     Decode {
         path: PathBuf,
         out: Option<PathBuf>,

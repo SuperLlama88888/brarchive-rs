@@ -13,7 +13,8 @@ fn deserialize_into_vec() {
     let bytes = brarchive::serialize([
         ("a.json".to_string(), "1".to_string()),
         ("b.json".to_string(), "2".to_string()),
-    ]).unwrap();
+    ])
+    .unwrap();
     let vec: Vec<(String, String)> = brarchive::deserialize(&bytes).unwrap();
     assert_eq!(vec.len(), 2);
     assert_eq!(vec[0], ("a.json".to_string(), "1".to_string()));
@@ -70,11 +71,7 @@ fn serialize_with_no_dedup_matches_serialize() {
 
 #[test]
 fn list_returns_entry_names() {
-    let bytes = brarchive::serialize([
-        ("a.json", "1"),
-        ("b.json", "2"),
-        ("c.json", "3"),
-    ]).unwrap();
+    let bytes = brarchive::serialize([("a.json", "1"), ("b.json", "2"), ("c.json", "3")]).unwrap();
     let names = brarchive::list(&bytes).unwrap();
     assert_eq!(names, vec!["a.json", "b.json", "c.json"]);
 }

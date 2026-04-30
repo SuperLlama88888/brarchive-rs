@@ -36,8 +36,7 @@ fn dedup_round_trip_with_real_names() {
             r#"{"id":"creeper"}"#.to_string(),
         ),
     ];
-    let bytes =
-        brarchive::serialize_with(data.clone(), SerializeOptions { dedup: true }).unwrap();
+    let bytes = brarchive::serialize_with(data.clone(), SerializeOptions { dedup: true }).unwrap();
     let result: BTreeMap<String, String> = brarchive::deserialize(&bytes).unwrap();
     assert_eq!(result["entity/zombie.json"], r#"{"id":"zombie"}"#);
     assert_eq!(result["entity/skeleton.json"], r#"{"id":"zombie"}"#);
@@ -61,8 +60,7 @@ fn dedup_produces_smaller_output_for_identical_values() {
         ("c.json".to_string(), "x".repeat(512)),
     ];
     let without = brarchive::serialize(data.clone()).unwrap();
-    let with_dedup =
-        brarchive::serialize_with(data, SerializeOptions { dedup: true }).unwrap();
+    let with_dedup = brarchive::serialize_with(data, SerializeOptions { dedup: true }).unwrap();
     assert!(with_dedup.len() < without.len());
 }
 
@@ -73,7 +71,10 @@ fn deserialize_bad_magic_returns_error() {
     let mut bytes = brarchive::serialize([("k", "v")]).unwrap();
     bytes[0] ^= 0xFF;
     let result: Result<BTreeMap<String, String>, _> = brarchive::deserialize(&bytes);
-    assert!(matches!(result, Err(brarchive::error::BrArchiveError::MagicMismatch(_))));
+    assert!(matches!(
+        result,
+        Err(brarchive::error::BrArchiveError::MagicMismatch(_))
+    ));
 }
 
 #[test]
@@ -82,14 +83,20 @@ fn deserialize_bad_version_returns_error() {
     // Version is at bytes 12-15 (u32 LE). Set it to an unsupported value.
     bytes[12..16].copy_from_slice(&999u32.to_le_bytes());
     let result: Result<BTreeMap<String, String>, _> = brarchive::deserialize(&bytes);
-    assert!(matches!(result, Err(brarchive::error::BrArchiveError::UnsupportedVersion(999))));
+    assert!(matches!(
+        result,
+        Err(brarchive::error::BrArchiveError::UnsupportedVersion(999))
+    ));
 }
 
 #[test]
 fn serialize_name_too_long_returns_error() {
     let long_name = "a".repeat(248);
     let result = brarchive::serialize([(long_name.as_str(), "v")]);
-    assert!(matches!(result, Err(brarchive::error::BrArchiveError::EntryNameTooLong(_))));
+    assert!(matches!(
+        result,
+        Err(brarchive::error::BrArchiveError::EntryNameTooLong(_))
+    ));
 }
 
 #[test]
@@ -115,7 +122,11 @@ fn fixture_ddui_is_empty_archive() {
 #[test]
 fn fixture_models_is_empty_archive() {
     let bytes = include_bytes!("fixtures/models.brarchive");
-    assert_eq!(bytes.len(), 16, "models.brarchive should be exactly 16 bytes");
+    assert_eq!(
+        bytes.len(),
+        16,
+        "models.brarchive should be exactly 16 bytes"
+    );
     let result: BTreeMap<String, String> = brarchive::deserialize(bytes).unwrap();
     assert!(result.is_empty());
 }

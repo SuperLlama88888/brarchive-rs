@@ -25,7 +25,10 @@ where
 }
 
 /// Serialize with explicit options.
-pub fn serialize_with<I, K, V>(data: I, options: SerializeOptions) -> Result<Vec<u8>, BrArchiveError>
+pub fn serialize_with<I, K, V>(
+    data: I,
+    options: SerializeOptions,
+) -> Result<Vec<u8>, BrArchiveError>
 where
     I: IntoIterator<Item = (K, V)>,
     K: AsRef<str>,
