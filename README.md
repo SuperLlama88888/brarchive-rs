@@ -4,7 +4,7 @@
 [![Crates.io Total Downloads](https://img.shields.io/crates/d/brarchive)](https://crates.io/crates/brarchive)
 [![Crates.io License](https://img.shields.io/crates/l/brarchive)](https://github.com/theaddonn/brarchive-rs/blob/main/LICENSE)
 
-Library and CLI for the Bedrock Archive (`.brarchive`) format — Mojang's bundling format for
+Library and CLI for the Bedrock Archive (`.brarchive`) format- Mojang's bundling format for
 UTF-8 text files in Minecraft Bedrock Edition resource and behavior packs.
 
 See [FORMAT.md](FORMAT.md) for the binary format specification.
@@ -12,11 +12,11 @@ See [FORMAT.md](FORMAT.md) for the binary format specification.
 ## Library Usage
 
 ```rust
-// Deserialize — collect into any type that implements FromIterator<(String, String)>
+// Deserialize- collect into any type that implements FromIterator<(String, String)>
 let map: std::collections::BTreeMap<_, _> = brarchive::deserialize(&bytes)?;
 let vec: Vec<(String, String)>            = brarchive::deserialize(&bytes)?;
 
-// Serialize — accepts any iterable of string-like pairs
+// Serialize- accepts any iterable of string-like pairs
 brarchive::serialize([("entity.json", r#"{"id":"zombie"}"#)])?;
 brarchive::serialize(&btree_map)?;
 

@@ -102,7 +102,7 @@ fn serialize_name_at_max_length_succeeds() {
 
 // --- Fixture-based tests ---
 
-/// ddui.brarchive is 16 bytes — an empty archive (0 entries).
+/// ddui.brarchive is 16 bytes- an empty archive (0 entries).
 #[test]
 fn fixture_ddui_is_empty_archive() {
     let bytes = include_bytes!("fixtures/ddui.brarchive");
@@ -111,7 +111,7 @@ fn fixture_ddui_is_empty_archive() {
     assert!(result.is_empty());
 }
 
-/// models.brarchive is 16 bytes — an empty archive (0 entries).
+/// models.brarchive is 16 bytes- an empty archive (0 entries).
 #[test]
 fn fixture_models_is_empty_archive() {
     let bytes = include_bytes!("fixtures/models.brarchive");

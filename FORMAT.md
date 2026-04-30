@@ -15,26 +15,26 @@ compression ratios.
 are stored. Used by Mojang as a registry to declare which files belong to a category without
 embedding content.
 
-## Binary Layout — Version 1
+## Binary Layout- Version 1
 
 All multi-byte integers are little-endian.
 
 ### Header (16 bytes)
 
-| Offset | Size | Type   | Description                          |
-|--------|------|--------|--------------------------------------|
-| 0      | 8    | u64 LE | Magic: `0x267052A0B125277D`          |
-| 8      | 4    | u32 LE | Entry count                          |
-| 12     | 4    | u32 LE | Format version (must be `1`)         |
+| Offset | Size | Type   | Description                  |
+| ------ | ---- | ------ | ---------------------------- |
+| 0      | 8    | u64 LE | Magic: `0x267052A0B125277D`  |
+| 8      | 4    | u32 LE | Entry count                  |
+| 12     | 4    | u32 LE | Format version (must be `1`) |
 
 ### Entry Descriptor (256 bytes each, repeated `entry_count` times)
 
-| Offset | Size | Type   | Description                                         |
-|--------|------|--------|-----------------------------------------------------|
-| 0      | 1    | u8     | Name length in bytes (0–247)                        |
-| 1      | 247  | bytes  | Entry name, UTF-8, zero-padded to 247 bytes         |
+| Offset | Size | Type   | Description                                           |
+| ------ | ---- | ------ | ----------------------------------------------------- |
+| 0      | 1    | u8     | Name length in bytes (0–247)                          |
+| 1      | 247  | bytes  | Entry name, UTF-8, zero-padded to 247 bytes           |
 | 248    | 4    | u32 LE | Content offset (relative to start of content section) |
-| 252    | 4    | u32 LE | Content length in bytes                             |
+| 252    | 4    | u32 LE | Content length in bytes                               |
 
 ### Content Section
 
@@ -46,7 +46,7 @@ content_base = 16 + (entry_count × 256)
 entry_data   = bytes[content_base + content_offset .. content_base + content_offset + content_len]
 ```
 
-Two entries may share the same `content_offset` and `content_len` — this is valid and is used
+Two entries may share the same `content_offset` and `content_len`- this is valid and is used
 for content deduplication.
 
 ## Constraints
@@ -58,9 +58,9 @@ for content deduplication.
 
 ## Version History
 
-| Version | Description         |
-|---------|---------------------|
-| 1       | Initial version     |
+| Version | Description     |
+| ------- | --------------- |
+| 1       | Initial version |
 
 ## Pack Integration Notes
 
