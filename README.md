@@ -12,6 +12,9 @@ See [FORMAT.md](FORMAT.md) for the binary format specification.
 ## Library Usage
 
 ```rust
+// List entry names without reading content
+let names: Vec<String> = brarchive::list(&bytes)?;
+
 // Deserialize- collect into any type that implements FromIterator<(String, String)>
 let map: std::collections::BTreeMap<_, _> = brarchive::deserialize(&bytes)?;
 let vec: Vec<(String, String)>            = brarchive::deserialize(&bytes)?;
@@ -47,4 +50,10 @@ brarchive-cli decode path/to/pack --recursive
 
 # Delete archive after decoding
 brarchive-cli decode output.brarchive path/to/out/ --delete-source
+
+# List entry names in an archive
+brarchive-cli list output.brarchive
+
+# List entries in all archives under __brarchive/ recursively
+brarchive-cli list path/to/pack --recursive
 ```
