@@ -25,10 +25,10 @@ jobs:
             os: windows-latest
             binary: brarchive-cli.exe
           - target: x86_64-apple-darwin
-            os: macos-11
+            os: macos-15-intel
             binary: brarchive-cli
           - target: aarch64-apple-darwin
-            os: macos-latest
+            os: macos-15
             binary: brarchive-cli
 
     steps:
